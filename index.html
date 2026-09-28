@@ -123,7 +123,7 @@ input[type=text]{
     <div class="progress"><div id="bar"></div></div>
     <div class="prompt" id="prompt"></div>
     <div class="qtext" id="question"></div>
-    <button id="speakerBtn" class="speaker hidden">🔊 発音を聞く</button>
+    <button id="speakerBtn" class="speaker hidden">🔊 もう一度聞く</button>
     <div class="choices" id="choices"></div>
     <div id="feedback" class="feedback hidden"></div>
   </div>
@@ -294,10 +294,14 @@ function showQuestion(){
   $("question").textContent=item.q;
 
   const sp=$("speakerBtn");
-  if(item.s){
+  const speechText = item.s || getEnglishSpeech(item);
+  if(speechText){
     sp.classList.remove("hidden");
-    sp.onclick=()=>speak(item.s);
-  }else sp.classList.add("hidden");
+    sp.onclick=()=>speak(speechText);
+    setTimeout(()=>speak(speechText), 350);
+  }else{
+    sp.classList.add("hidden");
+  }
 
   const box=$("choices"); box.innerHTML="";
   shuffle(item.o).forEach(opt=>{
@@ -375,11 +379,46 @@ $("restartBtn").onclick=()=>{
   window.scrollTo({top:0,behavior:"smooth"});
 };
 
+function getEnglishSpeech(item){
+  // 問題文から、読み上げる英語部分だけをなるべく自然に取り出す
+  // 日本語訳・説明は読み上げない
+  let q = item.q || "";
+
+  // 日本語の引用・説明が後ろにある場合はカット
+  q = q.replace(/「[^」]*」/g, "");
+  q = q.replace(/→.*$/g, "");
+
+  // 括弧の選択肢表示を読みやすくする
+  q = q.replace(/\(\s*play\s*\/\s*plays\s*\)/i, "plays");
+  q = q.replace(/\(\s*like\s*\/\s*likes\s*\)/i, "likes");
+  q = q.replace(/\(\s*study\s*\/\s*studies\s*\)/i, "studies");
+
+  // (　) は正解語に置換
+  q = q.replace(/\(\s*　?\s*\)/g, item.a);
+
+  // 英語らしい文字が含まれるか確認
+  const hasEnglish = /[A-Za-z]/.test(q);
+  if(!hasEnglish) return "";
+
+  // 日本語文字を除去し、英語・数字・一般的な句読点だけ残す
+  q = q.replace(/[ぁ-んァ-ン一-龯々ー]/g, " ");
+  q = q.replace(/[？]/g, "?");
+  q = q.replace(/[。]/g, ".");
+  q = q.replace(/\s+/g, " ").trim();
+
+  // ラベルや余計な記号を整理
+  q = q.replace(/^\s*[:：\-–—]+\s*/, "");
+
+  return q;
+}
+
 function speak(text){
-  if(!("speechSynthesis" in window)) return;
+  if(!text || !("speechSynthesis" in window)) return;
   speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text);
-  u.lang="en-US"; u.rate=.8;
+  u.lang="en-US";
+  u.rate=.78;
+  u.pitch=1;
   speechSynthesis.speak(u);
 }
 function beep(ok){
