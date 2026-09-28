@@ -104,7 +104,13 @@ input[type=text]{
   </div>
 
   <div class="card">
-    <h2>② 問題数を選ぶ</h2>
+    <h2>② 名前を入力</h2>
+    <input type="text" id="studentName" placeholder="名前を入力してください" autocomplete="name">
+    <p class="sub">成績表に記録する名前です。</p>
+  </div>
+
+  <div class="card">
+    <h2>③ 問題数を選ぶ</h2>
     <div class="mode-row">
       <button class="mode-btn active" data-count="10">10問</button>
       <button class="mode-btn" data-count="20">20問</button>
@@ -135,6 +141,7 @@ input[type=text]{
     <div class="score" id="scoreText"></div>
     <p id="resultMessage" style="text-align:center;font-weight:800"></p>
     <div id="weakBox" class="note"></div>
+    <div id="sendStatus" class="sub" style="margin-top:10px;text-align:center"></div>
     <button class="primary hidden" id="retryWrongBtn">まちがえた問題だけ再挑戦</button>
     <button class="secondary" id="restartBtn">カテゴリー選択へ戻る</button>
   </div>
@@ -245,6 +252,7 @@ const Q = [
 
 let selectedCat="reading", selectedCount=10;
 let quiz=[], idx=0, correct=0, wrongItems=[], answered=false;
+let startedAt=null, finishedAt=null, sentForAttempt=false;
 
 const $=id=>document.getElementById(id);
 const shuffle=a=>[...a].sort(()=>Math.random()-.5);
@@ -262,6 +270,9 @@ function renderCategories(){
 }
 renderCategories();
 
+const savedName = localStorage.getItem("chu1EnglishStudentName") || "";
+if($("studentName")) $("studentName").value = savedName;
+
 document.querySelectorAll(".mode-btn").forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll(".mode-btn").forEach(x=>x.classList.remove("active"));
@@ -271,10 +282,22 @@ document.querySelectorAll(".mode-btn").forEach(b=>{
 });
 
 $("startBtn").onclick=()=>{
+  const name = ($("studentName")?.value || "").trim();
+  if(!name){
+    alert("名前を入力してください。");
+    $("studentName")?.focus();
+    return;
+  }
+  localStorage.setItem("chu1EnglishStudentName", name);
+
   let pool=Q.filter(x=>x.c===selectedCat);
   pool=shuffle(pool);
   quiz=selectedCount==="all"?pool:pool.slice(0,Math.min(selectedCount,pool.length));
   idx=0;correct=0;wrongItems=[];answered=false;
+  startedAt=new Date();
+  finishedAt=null;
+  sentForAttempt=false;
+  if($("sendStatus")) $("sendStatus").textContent="";
   $("startScreen").classList.add("hidden");
   $("resultScreen").classList.add("hidden");
   $("quizScreen").classList.remove("hidden");
@@ -338,6 +361,7 @@ $("nextBtn").onclick=()=>{
 };
 
 function finish(){
+  finishedAt=new Date();
   $("bar").style.width="100%";
   $("quizScreen").classList.add("hidden");
   $("stickyBar").classList.add("hidden");
@@ -363,11 +387,16 @@ function finish(){
     });
     $("retryWrongBtn").classList.remove("hidden");
   }
+  sendResult();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
 $("retryWrongBtn").onclick=()=>{
   quiz=shuffle(wrongItems); idx=0; correct=0; wrongItems=[];
+  startedAt=new Date();
+  finishedAt=null;
+  sentForAttempt=false;
+  if($("sendStatus")) $("sendStatus").textContent="";
   $("resultScreen").classList.add("hidden");
   $("quizScreen").classList.remove("hidden");
   $("stickyBar").classList.remove("hidden");
@@ -378,6 +407,60 @@ $("restartBtn").onclick=()=>{
   $("startScreen").classList.remove("hidden");
   window.scrollTo({top:0,behavior:"smooth"});
 };
+
+
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbxxBGR0zMSx34cOws9dt7la53wo9ufEnY5_J3tKoQ6u7iI7y6N3pvbc2T6N0CUv1hJl/exec";
+
+function formatDateTime(d){
+  if(!d) return "";
+  const pad=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function buildData(){
+  const total = quiz.length;
+  const score = total ? Math.round(correct / total * 100) : 0;
+  const wrongQuestions = wrongItems.length
+    ? wrongItems.map((it,i)=>`${i+1}. ${it.q}（正解：${it.a}）`).join(" / ")
+    : "なし";
+  const weakTopics = wrongItems.length
+    ? `${CAT[selectedCat].name}：${wrongItems.length}問ミス`
+    : `${CAT[selectedCat].name}：ミスなし`;
+
+  return {
+    studentName: ($("studentName")?.value || localStorage.getItem("chu1EnglishStudentName") || "").trim(),
+    subject: "英語",
+    score,
+    correct,
+    total,
+    wrongQuestions,
+    weakTopics,
+    startedAt: formatDateTime(startedAt),
+    finishedAt: formatDateTime(finishedAt),
+    category: CAT[selectedCat].name,
+    mode: selectedCount === "all" ? "全問" : `${selectedCount}問`
+  };
+}
+
+async function sendResult(){
+  if(sentForAttempt) return;
+  sentForAttempt = true;
+  const status = $("sendStatus");
+  if(status) status.textContent = "成績を送信しています…";
+
+  try{
+    await fetch(ENDPOINT,{
+      method:"POST",
+      mode:"no-cors",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify(buildData())
+    });
+    if(status) status.textContent = "✓ 成績を送信しました";
+  }catch(e){
+    sentForAttempt = false;
+    if(status) status.textContent = "成績を送信できませんでした。通信環境を確認してください。";
+  }
+}
 
 function getEnglishSpeech(item){
   // 問題文から、読み上げる英語部分だけをなるべく自然に取り出す
