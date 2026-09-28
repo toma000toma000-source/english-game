@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>中1英語 基礎やり直しゲーム</title>
+<style>
+:root{
+  --bg:#f4f8ff; --card:#fff; --text:#1f2937; --sub:#64748b;
+  --main:#2563eb; --main2:#1d4ed8; --ok:#16a34a; --ng:#dc2626;
+  --line:#dbeafe; --soft:#eff6ff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif;
+  background:var(--bg); color:var(--text);
+}
+.wrap{max-width:760px;margin:0 auto;padding:14px 14px 100px}
+.card{
+  background:var(--card); border-radius:20px; padding:20px;
+  box-shadow:0 8px 24px rgba(15,23,42,.08); margin:12px 0;
+}
+h1{font-size:26px;line-height:1.35;margin:4px 0 8px}
+h2{font-size:21px;margin:0 0 14px}
+p{line-height:1.7}
+.sub{color:var(--sub);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+.cat{
+  border:2px solid #dbeafe;background:#fff;border-radius:16px;padding:14px;
+  text-align:left;cursor:pointer;font-weight:700;font-size:16px;
+}
+.cat small{display:block;color:var(--sub);font-weight:500;margin-top:4px}
+.cat.active{border-color:var(--main);background:var(--soft)}
+.mode-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.mode-btn{
+  border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:10px 16px;
+  font-weight:700;cursor:pointer
+}
+.mode-btn.active{background:var(--main);color:white;border-color:var(--main)}
+.primary,.secondary{
+  width:100%;border:0;border-radius:14px;padding:15px 18px;font-size:17px;
+  font-weight:800;cursor:pointer;margin-top:10px
+}
+.primary{background:var(--main);color:#fff}.primary:hover{background:var(--main2)}
+.secondary{background:#e2e8f0;color:#0f172a}
+.hidden{display:none!important}
+.topline{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.badge{
+  display:inline-block;background:#e0ecff;color:#1d4ed8;border-radius:999px;
+  padding:6px 10px;font-size:13px;font-weight:800
+}
+.progress{height:12px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin:12px 0 18px}
+.progress > div{height:100%;background:var(--main);width:0;transition:.25s}
+.qtext{font-size:23px;font-weight:800;line-height:1.55;margin:10px 0 16px}
+.prompt{font-size:15px;color:var(--sub);margin-bottom:8px}
+.choices{display:grid;gap:10px}
+.choice{
+  width:100%;text-align:left;border:2px solid #dbeafe;background:#fff;border-radius:14px;
+  padding:14px 15px;font-size:17px;font-weight:700;cursor:pointer
+}
+.choice:hover{border-color:#93c5fd;background:#f8fbff}
+.choice.correct{border-color:#86efac;background:#f0fdf4;color:#166534}
+.choice.wrong{border-color:#fca5a5;background:#fef2f2;color:#991b1b}
+.choice:disabled{cursor:default}
+.feedback{
+  margin-top:14px;border-radius:14px;padding:14px;font-size:17px;font-weight:800
+}
+.feedback.ok{background:#ecfdf5;color:#166534}
+.feedback.ng{background:#fff1f2;color:#991b1b}
+.explain{font-size:15px;font-weight:600;margin-top:8px;line-height:1.6}
+.speaker{
+  border:0;background:#e0ecff;color:#1d4ed8;border-radius:12px;padding:9px 12px;
+  font-size:15px;font-weight:800;cursor:pointer;margin:0 0 12px
+}
+.sticky{
+  position:fixed;left:0;right:0;bottom:0;background:rgba(244,248,255,.96);
+  backdrop-filter:blur(8px);padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  border-top:1px solid #dbeafe
+}
+.sticky-inner{max-width:760px;margin:auto}
+#nextBtn{margin:0}
+.score{font-size:42px;font-weight:900;color:var(--main);text-align:center;margin:8px 0}
+.review{border-top:1px solid #e2e8f0;padding:12px 0}
+.review b{display:block;margin-bottom:5px}
+input[type=text]{
+  width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:13px 14px;font-size:16px
+}
+.note{background:#fff7ed;border-radius:12px;padding:12px;font-size:14px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="startScreen">
+  <div class="card">
+    <h1>🎮 中1英語 基礎やり直しゲーム</h1>
+    <p class="sub">6カテゴリーから選んで、わからないところだけ練習できます。</p>
+  </div>
+
+  <div class="card">
+    <h2>① カテゴリーを選ぶ</h2>
+    <div class="grid" id="categoryGrid"></div>
+  </div>
+
+  <div class="card">
+    <h2>② 問題数を選ぶ</h2>
+    <div class="mode-row">
+      <button class="mode-btn active" data-count="10">10問</button>
+      <button class="mode-btn" data-count="20">20問</button>
+      <button class="mode-btn" data-count="all">全問</button>
+    </div>
+    <button class="primary" id="startBtn">スタート！</button>
+  </div>
+</section>
+
+<section id="quizScreen" class="hidden">
+  <div class="card">
+    <div class="topline">
+      <span class="badge" id="categoryBadge"></span>
+      <span id="counter" class="sub"></span>
+    </div>
+    <div class="progress"><div id="bar"></div></div>
+    <div class="prompt" id="prompt"></div>
+    <div class="qtext" id="question"></div>
+    <button id="speakerBtn" class="speaker hidden">🔊 発音を聞く</button>
+    <div class="choices" id="choices"></div>
+    <div id="feedback" class="feedback hidden"></div>
+  </div>
+</section>
+
+<section id="resultScreen" class="hidden">
+  <div class="card">
+    <h2>結果</h2>
+    <div class="score" id="scoreText"></div>
+    <p id="resultMessage" style="text-align:center;font-weight:800"></p>
+    <div id="weakBox" class="note"></div>
+    <button class="primary hidden" id="retryWrongBtn">まちがえた問題だけ再挑戦</button>
+    <button class="secondary" id="restartBtn">カテゴリー選択へ戻る</button>
+  </div>
+  <div class="card">
+    <h2>まちがえた問題</h2>
+    <div id="reviewBox"></div>
+  </div>
+</section>
+
+</div>
+
+<div class="sticky hidden" id="stickyBar">
+  <div class="sticky-inner">
+    <button class="primary" id="nextBtn" disabled>次へ</button>
+  </div>
+</div>
+
+<script>
+const CAT = {
+  reading:{name:"1. アルファベット・単語の読み方", desc:"文字・単語・発音の基礎"},
+  be:{name:"2. be動詞", desc:"am / is / are"},
+  verb:{name:"3. 一般動詞", desc:"play / like / study など"},
+  third:{name:"4. 三単現", desc:"he / she / Ken + s"},
+  wh:{name:"5. 疑問詞", desc:"what / who / where / when / how"},
+  can:{name:"6. can", desc:"〜できる / できますか"}
+};
+
+const Q = [
+{c:"reading",p:"小文字を選ぼう",q:"B の小文字は？",a:"b",o:["b","d","p","q"],e:"B の小文字は b です。"},
+{c:"reading",p:"大文字を選ぼう",q:"g の大文字は？",a:"G",o:["C","G","J","Q"],e:"g の大文字は G です。"},
+{c:"reading",p:"意味を選ぼう",q:"dog",a:"犬",o:["犬","猫","鳥","魚"],e:"dog は「犬」です。",s:"dog"},
+{c:"reading",p:"意味を選ぼう",q:"school",a:"学校",o:["学校","公園","病院","駅"],e:"school は「学校」です。",s:"school"},
+{c:"reading",p:"英単語を選ぼう",q:"「猫」",a:"cat",o:["cat","dog","book","desk"],e:"「猫」は cat です。",s:"cat"},
+{c:"reading",p:"意味を選ぼう",q:"book",a:"本",o:["本","机","いす","かばん"],e:"book は「本」です。",s:"book"},
+{c:"reading",p:"意味を選ぼう",q:"friend",a:"友だち",o:["先生","友だち","家族","生徒"],e:"friend は「友だち」です。",s:"friend"},
+{c:"reading",p:"意味を選ぼう",q:"student",a:"生徒",o:["先生","生徒","医者","選手"],e:"student は「生徒」です。",s:"student"},
+{c:"reading",p:"意味を選ぼう",q:"music",a:"音楽",o:["音楽","英語","数学","美術"],e:"music は「音楽」です。",s:"music"},
+{c:"reading",p:"意味を選ぼう",q:"soccer",a:"サッカー",o:["野球","サッカー","水泳","テニス"],e:"soccer は「サッカー」です。",s:"soccer"},
+{c:"reading",p:"英単語を選ぼう",q:"「英語」",a:"English",o:["English","music","school","friend"],e:"「英語」は English です。",s:"English"},
+{c:"reading",p:"英単語を選ぼう",q:"「先生」",a:"teacher",o:["teacher","student","friend","school"],e:"「先生」は teacher です。",s:"teacher"},
+
+{c:"be",p:"（　）に入る語を選ぼう",q:"I (　) Taro.",a:"am",o:["am","is","are","do"],e:"I の後の be動詞は am。"},
+{c:"be",p:"（　）に入る語を選ぼう",q:"You (　) kind.",a:"are",o:["am","is","are","do"],e:"You の後の be動詞は are。"},
+{c:"be",p:"（　）に入る語を選ぼう",q:"He (　) my friend.",a:"is",o:["am","is","are","do"],e:"He の後の be動詞は is。"},
+{c:"be",p:"（　）に入る語を選ぼう",q:"She (　) a student.",a:"is",o:["am","is","are","do"],e:"She の後の be動詞は is。"},
+{c:"be",p:"（　）に入る語を選ぼう",q:"We (　) happy.",a:"are",o:["am","is","are","does"],e:"We の後の be動詞は are。"},
+{c:"be",p:"否定文を選ぼう",q:"I am busy. → 「私は忙しくありません」",a:"I am not busy.",o:["I am not busy.","I don't busy.","I not am busy.","I isn't busy."],e:"be動詞の否定文は be動詞の後に not。"},
+{c:"be",p:"否定文を選ぼう",q:"He is a teacher. → 「彼は先生ではありません」",a:"He is not a teacher.",o:["He does not a teacher.","He is not a teacher.","He not is a teacher.","He are not a teacher."],e:"is の後に not を置きます。"},
+{c:"be",p:"疑問文を選ぼう",q:"You are hungry. → 「あなたはお腹が空いていますか」",a:"Are you hungry?",o:["Do you hungry?","Are you hungry?","You are hungry?","Is you hungry?"],e:"be動詞を文の先頭に出します。"},
+{c:"be",p:"疑問文を選ぼう",q:"She is your sister. → 「彼女はあなたの姉妹ですか」",a:"Is she your sister?",o:["Does she your sister?","Are she your sister?","Is she your sister?","She is your sister?"],e:"She に対応する is を先頭へ。"},
+{c:"be",p:"正しい文を選ぼう",q:"「私は中学生です」",a:"I am a junior high school student.",o:["I am a junior high school student.","I is a junior high school student.","I are a junior high school student.","I do a junior high school student."],e:"I には am を使います。"},
+{c:"be",p:"正しい文を選ぼう",q:"「彼らは友だちです」",a:"They are friends.",o:["They is friends.","They are friends.","They am friends.","They do friends."],e:"They には are を使います。"},
+{c:"be",p:"短縮形を選ぼう",q:"is not の短縮形は？",a:"isn't",o:["isn't","don't","aren't","doesn't"],e:"is not → isn't。"},
+{c:"be",p:"短縮形を選ぼう",q:"are not の短縮形は？",a:"aren't",o:["isn't","aren't","don't","can't"],e:"are not → aren't。"},
+
+{c:"verb",p:"正しい語を選ぼう",q:"I (　) soccer.",a:"play",o:["play","am","is","are"],e:"「する」は一般動詞 play。"},
+{c:"verb",p:"正しい語を選ぼう",q:"I (　) music.",a:"like",o:["like","am","are","do"],e:"「好き」は一般動詞 like。"},
+{c:"verb",p:"正しい語を選ぼう",q:"You (　) English.",a:"study",o:["study","are","is","does"],e:"「勉強する」は study。"},
+{c:"verb",p:"正しい語を選ぼう",q:"I (　) books.",a:"read",o:["read","am","do","is"],e:"「読む」は read。"},
+{c:"verb",p:"否定文を選ぼう",q:"I play baseball. → 「私は野球をしません」",a:"I don't play baseball.",o:["I am not play baseball.","I don't play baseball.","I doesn't play baseball.","I not play baseball."],e:"一般動詞の否定文は don't + 動詞の原形。"},
+{c:"verb",p:"否定文を選ぼう",q:"I like natto. → 「私は納豆が好きではありません」",a:"I don't like natto.",o:["I am not like natto.","I don't like natto.","I doesn't like natto.","I not like natto."],e:"I の否定は don't。"},
+{c:"verb",p:"疑問文を選ぼう",q:"「あなたはサッカーをしますか」",a:"Do you play soccer?",o:["Are you play soccer?","Do you play soccer?","Does you play soccer?","You do play soccer?"],e:"一般動詞の疑問文は Do + 主語 + 動詞の原形。"},
+{c:"verb",p:"疑問文を選ぼう",q:"「あなたは犬が好きですか」",a:"Do you like dogs?",o:["Are you like dogs?","Do you like dogs?","Does you like dogs?","You like dogs?"],e:"Do you + 動詞の原形。"},
+{c:"verb",p:"正しい返事を選ぼう",q:"Do you play soccer?（はい）",a:"Yes, I do.",o:["Yes, I am.","Yes, I do.","Yes, I play.","Yes, I can."],e:"Do で聞かれたら do で答えます。"},
+{c:"verb",p:"正しい返事を選ぼう",q:"Do you like math?（いいえ）",a:"No, I don't.",o:["No, I am not.","No, I don't.","No, I can't.","No, I isn't."],e:"Do で聞かれた否定の返事は No, I don't.。"},
+{c:"verb",p:"正しい文を選ぼう",q:"「私は毎日英語を勉強します」",a:"I study English every day.",o:["I am study English every day.","I study English every day.","I studies English every day.","I do English every day."],e:"I の一般動詞は原形 study。"},
+{c:"verb",p:"be動詞と一般動詞",q:"正しい文はどれ？",a:"I play soccer.",o:["I am play soccer.","I play soccer.","I am like music.","I do am happy."],e:"play は一般動詞なので am は一緒に置きません。"},
+
+{c:"third",p:"正しい方を選ぼう",q:"He ( play / plays ) soccer.",a:"plays",o:["play","plays","playing","played"],e:"He は三人称単数なので plays。"},
+{c:"third",p:"正しい方を選ぼう",q:"She ( like / likes ) music.",a:"likes",o:["like","likes","liking","liked"],e:"She は三人称単数なので likes。"},
+{c:"third",p:"正しい方を選ぼう",q:"Ken ( study / studies ) English.",a:"studies",o:["study","studys","studies","studying"],e:"study は y を i に変えて es → studies。"},
+{c:"third",p:"正しい形を選ぼう",q:"My brother (　) TV.",a:"watches",o:["watch","watchs","watches","watching"],e:"watch は es をつけて watches。"},
+{c:"third",p:"否定文を選ぼう",q:"He plays soccer. → 否定文",a:"He doesn't play soccer.",o:["He don't plays soccer.","He doesn't play soccer.","He isn't play soccer.","He doesn't plays soccer."],e:"三単現の否定は doesn't + 動詞の原形。"},
+{c:"third",p:"疑問文を選ぼう",q:"「彼はサッカーをしますか」",a:"Does he play soccer?",o:["Do he plays soccer?","Does he play soccer?","Is he play soccer?","Does he plays soccer?"],e:"Does + 主語 + 動詞の原形。"},
+{c:"third",p:"正しい返事を選ぼう",q:"Does she like music?（はい）",a:"Yes, she does.",o:["Yes, she do.","Yes, she does.","Yes, she is.","Yes, she likes."],e:"Does で聞かれたら does で答えます。"},
+{c:"third",p:"正しい返事を選ぼう",q:"Does Ken study English?（いいえ）",a:"No, he doesn't.",o:["No, he don't.","No, he doesn't.","No, he isn't.","No, he not."],e:"Does の否定の返事は doesn't。"},
+{c:"third",p:"三単現になる主語を選ぼう",q:"どれが三単現？",a:"my father",o:["I","you","we","my father"],e:"my father = he と考えられるので三人称単数。"},
+{c:"third",p:"三単現にならない主語を選ぼう",q:"どれは動詞に s をつけない？",a:"they",o:["he","she","Ken","they"],e:"they は複数なので動詞に s をつけません。"},
+{c:"third",p:"正しい文を選ぼう",q:"「彼女は毎日勉強します」",a:"She studies every day.",o:["She study every day.","She studies every day.","She does studies every day.","She is study every day."],e:"She + studies。"},
+{c:"third",p:"正しい文を選ぼう",q:"「トムは野球をしません」",a:"Tom doesn't play baseball.",o:["Tom don't play baseball.","Tom doesn't play baseball.","Tom doesn't plays baseball.","Tom isn't play baseball."],e:"doesn't の後は play の原形。"},
+
+{c:"wh",p:"疑問詞を選ぼう",q:"(　) is your name? 「あなたの名前は何ですか」",a:"What",o:["What","Where","Who","When"],e:"「何」は What。"},
+{c:"wh",p:"疑問詞を選ぼう",q:"(　) do you live? 「あなたはどこに住んでいますか」",a:"Where",o:["What","Where","Who","How"],e:"「どこ」は Where。"},
+{c:"wh",p:"疑問詞を選ぼう",q:"(　) is that boy? 「あの男の子はだれですか」",a:"Who",o:["What","Where","Who","When"],e:"「だれ」は Who。"},
+{c:"wh",p:"疑問詞を選ぼう",q:"(　) do you get up? 「あなたはいつ起きますか」",a:"When",o:["What","When","Who","How"],e:"「いつ」は When。"},
+{c:"wh",p:"疑問詞を選ぼう",q:"(　) are you? 「元気ですか」",a:"How",o:["How","What","Where","Who"],e:"How are you? で「元気ですか」。"},
+{c:"wh",p:"疑問詞を選ぼう",q:"(　) old are you? 「何歳ですか」",a:"How",o:["How","What","Who","When"],e:"How old ～? で「何歳」。"},
+{c:"wh",p:"疑問詞を選ぼう",q:"(　) color do you like? 「何色が好きですか」",a:"What",o:["What","Where","When","Who"],e:"What color ～? で「何色」。"},
+{c:"wh",p:"疑問詞を選ぼう",q:"(　) is your birthday? 「誕生日はいつですか」",a:"When",o:["When","Where","Who","How"],e:"「いつ」は When。"},
+{c:"wh",p:"疑問詞を選ぼう",q:"(　) is your teacher? 「あなたの先生はだれですか」",a:"Who",o:["What","Who","Where","When"],e:"「だれ」は Who。"},
+{c:"wh",p:"疑問詞を選ぼう",q:"(　) do you go to school? 「どうやって学校へ行きますか」",a:"How",o:["How","Who","What","When"],e:"「どのように」は How。"},
+{c:"wh",p:"正しい文を選ぼう",q:"「あなたは何が好きですか」",a:"What do you like?",o:["What are you like?","What do you like?","Where do you like?","Who do you like?"],e:"What + do you + 動詞。"},
+{c:"wh",p:"正しい文を選ぼう",q:"「あなたはどこでサッカーをしますか」",a:"Where do you play soccer?",o:["Where are you play soccer?","Where do you play soccer?","What do you play soccer?","Where does you play soccer?"],e:"Where + do you + play ～?"},
+
+{c:"can",p:"（　）に入る語を選ぼう",q:"I (　) swim. 「私は泳げます」",a:"can",o:["can","am","do","is"],e:"「〜できる」は can + 動詞の原形。"},
+{c:"can",p:"疑問文を選ぼう",q:"「あなたは泳げますか」",a:"Can you swim?",o:["Do you can swim?","Can you swim?","Are you swim?","Can you swims?"],e:"Can を文の先頭に置きます。"},
+{c:"can",p:"否定文を選ぼう",q:"「私は泳げません」",a:"I can't swim.",o:["I don't can swim.","I can't swim.","I am not swim.","I can not swims."],e:"can の否定は can't / cannot。"},
+{c:"can",p:"正しい文を選ぼう",q:"「彼はサッカーができます」",a:"He can play soccer.",o:["He cans play soccer.","He can plays soccer.","He can play soccer.","He is can play soccer."],e:"can の後は主語に関係なく動詞の原形。"},
+{c:"can",p:"正しい文を選ぼう",q:"「彼女はピアノを弾けます」",a:"She can play the piano.",o:["She cans play the piano.","She can plays the piano.","She can play the piano.","She is play the piano."],e:"can + play。"},
+{c:"can",p:"正しい返事を選ぼう",q:"Can you swim?（はい）",a:"Yes, I can.",o:["Yes, I do.","Yes, I am.","Yes, I can.","Yes, I swim."],e:"Can で聞かれたら can で答えます。"},
+{c:"can",p:"正しい返事を選ぼう",q:"Can he cook?（いいえ）",a:"No, he can't.",o:["No, he doesn't.","No, he isn't.","No, he can't.","No, he can not cooks."],e:"Can の否定の返事は can't。"},
+{c:"can",p:"正しい文を選ぼう",q:"「鳥は飛べます」",a:"Birds can fly.",o:["Birds can flies.","Birds can fly.","Birds are fly.","Birds cans fly."],e:"can の後は fly の原形。"},
+{c:"can",p:"正しい文を選ぼう",q:"「私は英語を話せます」",a:"I can speak English.",o:["I can speaks English.","I can speak English.","I am speak English.","I do can speak English."],e:"can + speak。"},
+{c:"can",p:"語順を確認",q:"can の後の動詞はどうする？",a:"原形にする",o:["s をつける","過去形にする","原形にする","ing形にする"],e:"can の後は必ず動詞の原形。"},
+{c:"can",p:"正しい文を選ぼう",q:"「ケンは速く走れます」",a:"Ken can run fast.",o:["Ken can runs fast.","Ken can run fast.","Ken cans run fast.","Ken is run fast."],e:"can + run。"},
+{c:"can",p:"疑問文を選ぼう",q:"「彼女は料理できますか」",a:"Can she cook?",o:["Does she can cook?","Can she cook?","Can she cooks?","Is she cook?"],e:"Can + she + cook ?"}
+];
+
+let selectedCat="reading", selectedCount=10;
+let quiz=[], idx=0, correct=0, wrongItems=[], answered=false;
+
+const $=id=>document.getElementById(id);
+const shuffle=a=>[...a].sort(()=>Math.random()-.5);
+
+function renderCategories(){
+  const grid=$("categoryGrid");
+  grid.innerHTML="";
+  Object.entries(CAT).forEach(([k,v])=>{
+    const b=document.createElement("button");
+    b.className="cat"+(k===selectedCat?" active":"");
+    b.innerHTML=`${v.name}<small>${v.desc}</small>`;
+    b.onclick=()=>{selectedCat=k;renderCategories();}
+    grid.appendChild(b);
+  });
+}
+renderCategories();
+
+document.querySelectorAll(".mode-btn").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll(".mode-btn").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    selectedCount=b.dataset.count==="all"?"all":Number(b.dataset.count);
+  }
+});
+
+$("startBtn").onclick=()=>{
+  let pool=Q.filter(x=>x.c===selectedCat);
+  pool=shuffle(pool);
+  quiz=selectedCount==="all"?pool:pool.slice(0,Math.min(selectedCount,pool.length));
+  idx=0;correct=0;wrongItems=[];answered=false;
+  $("startScreen").classList.add("hidden");
+  $("resultScreen").classList.add("hidden");
+  $("quizScreen").classList.remove("hidden");
+  $("stickyBar").classList.remove("hidden");
+  showQuestion();
+};
+
+function showQuestion(){
+  answered=false;
+  $("nextBtn").disabled=true;
+  $("feedback").className="feedback hidden";
+  const item=quiz[idx];
+  $("categoryBadge").textContent=CAT[item.c].name;
+  $("counter").textContent=`${idx+1} / ${quiz.length}`;
+  $("bar").style.width=`${(idx/quiz.length)*100}%`;
+  $("prompt").textContent=item.p;
+  $("question").textContent=item.q;
+
+  const sp=$("speakerBtn");
+  if(item.s){
+    sp.classList.remove("hidden");
+    sp.onclick=()=>speak(item.s);
+  }else sp.classList.add("hidden");
+
+  const box=$("choices"); box.innerHTML="";
+  shuffle(item.o).forEach(opt=>{
+    const b=document.createElement("button");
+    b.className="choice"; b.textContent=opt;
+    b.onclick=()=>answer(opt,b,item);
+    box.appendChild(b);
+  });
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function answer(opt, btn, item){
+  if(answered) return;
+  answered=true;
+  const ok=opt===item.a;
+  if(ok){correct++; beep(true);}
+  else{wrongItems.push(item); beep(false);}
+  document.querySelectorAll(".choice").forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===item.a) b.classList.add("correct");
+  });
+  if(!ok) btn.classList.add("wrong");
+  const f=$("feedback");
+  f.className="feedback "+(ok?"ok":"ng");
+  f.innerHTML=(ok?"○ 正解！":"× 不正解")+
+    `<div class="explain">正解：<b>${item.a}</b><br>${item.e}</div>`;
+  $("nextBtn").disabled=false;
+}
+
+$("nextBtn").onclick=()=>{
+  idx++;
+  if(idx<quiz.length) showQuestion();
+  else finish();
+};
+
+function finish(){
+  $("bar").style.width="100%";
+  $("quizScreen").classList.add("hidden");
+  $("stickyBar").classList.add("hidden");
+  $("resultScreen").classList.remove("hidden");
+  const pct=Math.round(correct/quiz.length*100);
+  $("scoreText").textContent=`${correct} / ${quiz.length}問`;
+  $("resultMessage").textContent=
+    pct===100?"満点！すばらしい！":
+    pct>=80?"かなりできています！":
+    pct>=60?"あと少し。間違いだけ復習しよう！":
+    "大丈夫。ここがスタート地点です。少しずつやろう！";
+  $("weakBox").innerHTML=`今回のカテゴリー：<b>${CAT[selectedCat].name}</b><br>正答率：<b>${pct}%</b>`;
+  const rb=$("reviewBox"); rb.innerHTML="";
+  if(wrongItems.length===0){
+    rb.innerHTML="<p>🎉 まちがいはありませんでした。</p>";
+    $("retryWrongBtn").classList.add("hidden");
+  }else{
+    wrongItems.forEach((it,i)=>{
+      const d=document.createElement("div");
+      d.className="review";
+      d.innerHTML=`<b>${i+1}. ${it.q}</b>正解：${it.a}<br><span class="sub">${it.e}</span>`;
+      rb.appendChild(d);
+    });
+    $("retryWrongBtn").classList.remove("hidden");
+  }
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+$("retryWrongBtn").onclick=()=>{
+  quiz=shuffle(wrongItems); idx=0; correct=0; wrongItems=[];
+  $("resultScreen").classList.add("hidden");
+  $("quizScreen").classList.remove("hidden");
+  $("stickyBar").classList.remove("hidden");
+  showQuestion();
+};
+$("restartBtn").onclick=()=>{
+  $("resultScreen").classList.add("hidden");
+  $("startScreen").classList.remove("hidden");
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+
+function speak(text){
+  if(!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang="en-US"; u.rate=.8;
+  speechSynthesis.speak(u);
+}
+function beep(ok){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator(), gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.type="sine"; osc.frequency.value=ok?740:180;
+    gain.gain.setValueAtTime(.06,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.18);
+    osc.start();osc.stop(ctx.currentTime+.18);
+  }catch(e){}
+}
+</script>
+</body>
+</html>
